@@ -3,6 +3,7 @@
 namespace App\Http\Livewire\Logistic;
 
 use App\Models\Product;
+use Exception;
 use Livewire\Component;
 
 class EditMany extends Component
@@ -10,7 +11,10 @@ class EditMany extends Component
 
     public $items = [];
     public $lists = [];
-    public $editProducts = [];
+    public $upc = [];
+    public $name = [];
+    public $stock = [];
+    public $price = [];
     
     public function render()
     {
@@ -18,21 +22,35 @@ class EditMany extends Component
         $this->emit('productStore');
         $upc = $this->lists;
 
-        $this->editProducts = Product::whereIn('upc', $upc)->get();
-
-
+        $this->upc = Product::whereIn('upc', $upc)->get('upc')->toArray();
         return view('livewire.logistic.edit-many');
+
     }
 
-    public function addProduct($product)
+    public function update()
     {
-        dd($product);
-        $collection = [
-            'upc'=>$product->upc,
-            'name'=>$product->name,
-            'stock'=>$product->stock,
-            'price'=>$product->price,
-        ];
-        array_push($this->lists , $collection);
+        $upc = $this->lists;
+        $price = array_map('intval', $this->price);
+        $stock = array_map('intval', $this->stock);
+        try {
+            foreach ($upc as $key => $value) {
+              Product::where('upc', $value)
+                ->update([
+                    'name'=>$this->name[$key],
+                    'stock'=>$stock[$key],
+                    'price'=>$price[$key]
+                ]);
+            }
+            session()->flash('success','Update Berhasil');
+            return to_route('logistic.index');
+        } catch (Exception $e) {
+            session()->flash('error',$e->getMessage());
+        }
+        
+    }
+
+    public function show()
+    {
+        dd($this->stock);
     }
 }
